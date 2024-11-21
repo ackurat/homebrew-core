@@ -23,7 +23,7 @@ class Colima < Formula
 
   depends_on "go" => :build
   depends_on "lima"
-
+  
   def install
     project = "github.com/abiosoft/colima"
     ldflags = %W[
@@ -31,15 +31,24 @@ class Colima < Formula
       -X #{project}/config.appVersion=#{version}
       -X #{project}/config.revision=#{Utils.git_head}
     ]
-    system "go", "build", *std_go_args(ldflags:), "./cmd/colima"
-
+    with_env(
+      "XDG_CONFIG_HOME" => "#{Dir.home}/.config",
+      "XDG_DATA_HOME" => "#{Dir.home}/.local/share",
+      "XDG_CACHE_HOME" => "#{Dir.home}/.cache"
+    ) do
+      system "go", "build", *std_go_args(ldflags:), "./cmd/colima"
+    end
+  
     generate_completions_from_executable(bin/"colima", "completion")
   end
 
   service do
     run [opt_bin/"colima", "start", "-f"]
     keep_alive successful_exit: true
-    environment_variables PATH: std_service_path_env
+    environment_variables PATH: std_service_path_env,
+                          XDG_CONFIG_HOME: "#{Dir.home}/.config",
+                          XDG_DATA_HOME: "#{Dir.home}/.local/share",
+                          XDG_CACHE_HOME: "#{Dir.home}/.cache"
     error_log_path var/"log/colima.log"
     log_path var/"log/colima.log"
     working_dir Dir.home
